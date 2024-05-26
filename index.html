@@ -1,0 +1,246 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Document</title>
+  </head>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      border: 0;
+      outline: 0;
+    }
+    #main {
+      display: flex;
+      align-items: center;
+      flex-direction: column;
+    }
+    body, html {
+      background-color: #510058;
+      min-width: max-content;
+    }
+
+    input {
+      flex-grow: 3;
+      padding-top: 20px;
+      padding-bottom: 20px;
+      border-radius: 7px;
+      box-sizing: border-box;
+      font-weight: 500;
+      font-family: sans-serif;
+      padding-left: 1rem;
+      padding-right: 1rem;
+      font-size: inherit;
+    }
+    button {
+      flex-grow: 1.2;
+      margin-left: 2%;
+      padding-top: 20px;
+      padding-bottom: 20px;
+      padding-left:10px;
+      padding-right:10px;
+      border-radius: 7px;
+      box-sizing: border-box;
+      font-weight: 500;
+      font-family: sans-serif;
+      background-color: #b10ac0;
+      color: white;
+      font-size: inherit;
+    }
+    button:hover {
+      background-color: #cb2ed9;
+      cursor: pointer;
+    }
+
+    button:disabled {
+        cursor:not-allowed;
+        background-color: #83018f;
+    }
+
+    #wrapper {
+      width: 50%;
+      display: flex;
+      justify-content: space-around;
+      margin-top: 4rem;
+      font-size: 1.35rem;
+    }
+
+    #result {
+      margin-top: 1rem;
+      width: 50%;
+      display: flex;
+      justify-content: space-around;
+      background-color: rgb(230, 230, 230);
+      font-size: 1.35rem;
+      box-sizing: border-box;
+      font-weight: 500;
+      padding: 12px;
+      font-family: sans-serif;
+      border-radius: 5px;
+      display: none;
+    }
+
+    #heading {
+      font-size: 4rem;
+      font-family: sans-serif;
+      font-weight: 750;
+      margin-top: 10rem;
+      color: rgb(255, 255, 255);
+      min-width: 500px;
+      display: flex;
+      justify-content: center;
+    }
+
+    .loader {
+      margin-top: 1rem;
+      border: 7px solid #f3f3f3;
+      border-radius: 50%;
+      border-top: 7px solid #cb2ed9;
+      width: 2rem;
+      height: 2rem;
+      -webkit-animation: spin 2s linear infinite;
+      animation: spin 2s linear infinite;
+      display: none;
+    }
+
+    @-webkit-keyframes spin {
+      0% {
+        -webkit-transform: rotate(0deg);
+      }
+      100% {
+        -webkit-transform: rotate(360deg);
+      }
+    }
+
+    @keyframes spin {
+      0% {
+        transform: rotate(0deg);
+      }
+      100% {
+        transform: rotate(360deg);
+      }
+    }
+
+    @media screen and (max-width:920px){
+        #wrapper, #result{
+            width: 70vw;
+        }
+    }
+
+    @media screen and (max-width:700px){
+        #wrapper, #result{
+            width: 90%;
+        }
+    }
+
+    @media screen and (max-width:450px){
+        #wrapper, #result{
+            flex-direction: column;
+            width:80%;
+        }
+        input{
+            flex-grow: 1;
+        }
+        button{
+            margin-top:1rem;
+            margin-left: 0;
+            flex-grow: 1;
+        }
+        #result {
+            font-size: 1rem;
+        }
+    }
+    
+  </style>
+  <body>
+    <div id="main">
+      <div id="heading">Shorty</div>
+      <div id="wrapper">
+        <input type="text" placeholder="Enter link here" />
+        <button>Shorten URL</button>
+      </div>
+      <div class="loader"></div>
+      <div id="result"><span style="color:blue; display:hidden">Copied!<span></span></div>
+    </div>
+
+    <script>
+      let spinner = document.querySelector(".loader");
+
+      let inputBox = document.querySelector("#wrapper input");
+
+      let resultBox = document.querySelector("#result");
+
+      let button = document.querySelector("button");
+
+      let shorten = async () => {
+        button.disabled=true;
+        spinner.style.display = "block";
+        resultBox.style.display = "none";
+
+        let link = inputBox.value.trim();
+
+        if (link.length == 0) {
+          resultBox.style.fontWeight = "550";
+          resultBox.style.color = "red";
+          resultBox.innerText = "URL can't be empty.";
+          resultBox.style.display = "flex";
+          spinner.style.display = "none";
+          button.disabled=false;
+          return;
+        }
+
+        if(!link.startsWith("http"))link = "https://"+link;
+
+        
+        let json = await fetch(
+          "https://shorty-shortener.onrender.com/shorten",
+          {
+            method: "POST",
+            body: JSON.stringify({
+              url: link,
+            }),
+            headers: {
+              "Content-type": "application/json",
+            },
+          }
+        );
+
+        let res = await json.json();
+
+        if (res.status == 1) {
+          resultBox.style.fontWeight = "500";
+          resultBox.innerText = res.shortURL;
+          resultBox.style.display = "flex";
+          resultBox.style.color = "black";
+          spinner.style.display = "none";
+        } else {
+            resultBox.style.fontWeight = "550";
+          resultBox.innerText = res.Error;
+          resultBox.style.display = "flex";
+          resultBox.style.color = "red";
+          spinner.style.display = "none";
+        }
+        button.disabled=false;
+      };
+
+      button.addEventListener("click", shorten);
+
+      inputBox.addEventListener("keydown", (e)=>{
+        
+        if(e.code=='Enter')shorten();
+      })
+
+
+      resultBox.addEventListener("click", (e)=>{
+        let link = e.target.innerText;
+        link = link.replace("Copied!", "")
+        if(!link.startsWith("shorty-redirect.onrender.com"))return ;
+        navigator.clipboard.writeText(link);
+        if(!resultBox.innerHTML.includes("Copied!"))
+        resultBox.innerHTML+=`<span style="color:blue">Copied!<span>`
+      })
+    </script>
+  </body>
+</html>
